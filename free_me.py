@@ -1,6 +1,5 @@
 import argparse
 import datetime
-from datetime import timezone
 import pickle
 import os.path
 from collections import namedtuple
@@ -8,15 +7,12 @@ from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 
-Time = namedtuple("Time", "time is_start busy pot_free")
+Time = namedtuple("Time", "time is_start busy pot_free") # pot_free means potentially free
 
 # If modifying these scopes, delete the file token.pickle.
 SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
 
 def get_busy_times(calendars, days=7, buf=10):
-    """Shows basic usage of the Google Calendar API.
-    Prints the start and name of the next 10 events on the user's calendar.
-    """
     creds = None
     # The file token.pickle stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first
@@ -64,6 +60,16 @@ def get_busy_times(calendars, days=7, buf=10):
     return busy_times
 
 def free_time(times, min_time=60):
+    """
+    computes the union of all potential free times minus
+    the union of all busy times. This is done by iterating
+    through all start/end points in sorted order and keeping
+    track of how many busy events are currently happening. If
+    this number changes from 1 to 0 or 0 to 1, then
+    a free time interval is begun or stored. While this is
+    happening, we also track whether or not we are currently
+    in a potential free time interval.
+    """
     min_time = datetime.timedelta(minutes=min_time)
     free_times = []
     counter = 0
@@ -105,7 +111,7 @@ def get_potential_freetimes(days, hours=[(9, 12), (12, 17)], weekends=False):
             
         day = datetime.timedelta(days=1)
         for i in range(days):
-            if not (start + i * day).weekday() in (6, 7) or weekends:
+            if (start + i * day).weekday() not in (6, 7) or weekends:
                 freetimes.append(Time(start + i * day, True, False, True))
                 freetimes.append(Time(end + i * day, False, False, True))
     return freetimes
@@ -133,6 +139,7 @@ def get_parser():
 
 if __name__ == '__main__':
     parser = get_parser().parse_args()
+    print(f"Fetching from calendars: {', '.join(parser.calendars)}")
     pot_free = get_potential_freetimes(parser.days, parser.free, parser.weekends)
     busy_times = get_busy_times(parser.calendars, parser.days, parser.buffer)
     times = free_time(pot_free + busy_times, parser.min_free)
