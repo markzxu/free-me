@@ -124,7 +124,7 @@ def free_times_to_hr(times):
 def get_parser():
     parser = argparse.ArgumentParser(description="free me from manual scheduling")
     parser.add_argument('--calendars', nargs='+', default=['primary'], help="name of calendars from which events will be drawn")
-    parser.add_argument('--free', nargs='+', default=[(9, 12), (12, 17)], help="24hr time tuples that are the boundries for theoretical free time")
+    parser.add_argument('--free', nargs='+', default=[(9, 12), (13, 17)], help="24hr time tuples that are the boundries for theoretical free time")
     parser.add_argument('--weekends', action="store_true", default=False, help="pass this if you want to schedule things on weekends")
     parser.add_argument('--buffer', type=int, default=10, help="number of minutes to buffer free time from calendar events")
     parser.add_argument('--min-free', type=int, default=60, help="number of minutes that free time must exceed to be reported")
