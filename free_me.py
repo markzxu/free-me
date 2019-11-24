@@ -78,7 +78,7 @@ def free_time(times, min_time=60):
                 counter -= 1
         if time.pot_free:
             is_pot_free = time.is_start
-            if is_pot_free:
+            if is_pot_free and counter == 0:
                 prev = time
             else:
                 if prev is not None:
@@ -121,12 +121,20 @@ def free_times_to_hr(times):
         free_intervals.append(f"{start.strftime('%I:%M%p').lstrip('0')}-{end.strftime('%I:%M%p').lstrip('0')}")
     print(f"{current_date.strftime('%a %m/%d')}: " + ", ".join(free_intervals))
 
+def get_parser():
+    parser = argparse.ArgumentParser(description="free me from manual scheduling")
+    parser.add_argument('--calendars', nargs='+', default=['primary'], help="name of calendars from which events will be drawn")
+    parser.add_argument('--free', nargs='+', default=[(9, 12), (12, 17)], help="24hr time tuples that are the boundries for theoretical free time")
+    parser.add_argument('--weekends', action="store_true", default=False, help="pass this if you want to schedule things on weekends")
+    parser.add_argument('--buffer', type=int, default=10, help="number of minutes to buffer free time from calendar events")
+    parser.add_argument('--min-free', type=int, default=60, help="number of minutes that free time must exceed to be reported")
+    parser.add_argument('--days', type=int, default=7, help="number of days in the future to report freetime (excludes today)")
+    return parser
 
 if __name__ == '__main__':
-    busy = get_busy_times(["Work History", "Sleep", "Scheduling"], 3)
-    print(busy)
-    free = get_potential_freetimes(3)
-    print(free)
-    t = free_time(busy + free)
-    free_times_to_hr(t)
-    
+    parser = get_parser().parse_args()
+    pot_free = get_potential_freetimes(parser.days, parser.free, parser.weekends)
+    busy_times = get_busy_times(parser.calendars, parser.days, parser.buffer)
+    times = free_time(pot_free + busy_times, parser.min_free)
+    free_times_to_hr(times)
+
